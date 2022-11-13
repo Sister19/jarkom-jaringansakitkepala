@@ -9,9 +9,15 @@ CLIENT_LISTEN_HANDSHAKE_TIMEOUT = 10
 class Client:
     def __init__(self):
         # Init client
+        args = {
+            "port": (int, "Client port"),
+            "path": (str, "Destination path")
+        }
         self.ip = "localhost"
         self.server_broadcast_addr = ("",5000)
-        pass
+        self.path = (str, "Destination path")
+        self.port = (int, "Client port")
+
 
     def three_way_handshake(self):
         # Three Way Handshake, client-side

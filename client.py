@@ -2,6 +2,7 @@ import lib.connection
 from lib.segment import Segment
 import lib.segment as segment
 import socket
+import lib.argparser
 
 CLIENT_LISTEN_TIMEOUT = 4
 CLIENT_LISTEN_HANDSHAKE_TIMEOUT = 10
@@ -12,12 +13,20 @@ class Client:
         args = {
             "port": (int, "Client port"),
             "path": (str, "Destination path")
+            # "-s": (None, "Show information of segment"),
+            # "-p": (None, "Show payload of a segment in hexadecimal")
         }
+        parser = lib.argparser.ArgumentParser("Client", args)
+        args = parser.parse_args()
+        
         self.ip = "localhost"
+        self.port = args.port
+        self.path = args.path
+        self.connection = lib.connection.Connection(self.ip, self.port)
         self.server_broadcast_addr = ("",5000)
-        self.path = (str, "Destination path")
-        self.port = (int, "Client port")
-
+        self.listen_timeout = CLIENT_LISTEN_TIMEOUT
+        self.listen_shake_timeout = CLIENT_LISTEN_HANDSHAKE_TIMEOUT
+        
 
     def three_way_handshake(self):
         # Three Way Handshake, client-side
@@ -32,11 +41,11 @@ class Client:
         
         # Listen for SYN-ACK
         print("[!] Waiting for server response...")
-        self.connection.set_timeout(CLIENT_LISTEN_HANDSHAKE_TIMEOUT)
+        self.connection.set_timeout(self.listen_shake_timeout)
         try:
             res_sync = self.connection.listen_single_segment()
             res_flag = res_sync.get_flag()
-            if res_flag.SYN and res_flag.ACK:
+            if res_flag.__FLAG:
                 # Send ACK
                 ack_req = Segment()
                 ack_req.set_flag([segment.ACK_FLAG])

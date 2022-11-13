@@ -68,11 +68,11 @@ class Client:
 
 if __name__ == '__main__':
     # test_connection
-    client = lib.connection.Connection("localhost",1234)
-    client.set_timeout(CLIENT_LISTEN_TIMEOUT)
-    msg = client.listen_single_segment()
-    print(msg)
-    client.close_socket()
-    # main = Client()
-    # main.three_way_handshake()
+    # client = lib.connection.Connection("localhost",1234)
+    # client.set_timeout(CLIENT_LISTEN_TIMEOUT)
+    # msg = client.listen_single_segment()
+    # print(msg)
+    # client.close_socket()
+    main = Client()
+    main.three_way_handshake()
     # main.listen_file_transfer()

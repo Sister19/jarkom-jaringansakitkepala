@@ -63,7 +63,43 @@ class Client:
 
     def listen_file_transfer(self):
         # File transfer, client-side
-        pass
+        print("[!] Start transfering file...")
+
+        self.connection.set_timeout(self.listen_timeout)
+        with open(self.path, "wb") as dest:
+            request_number = 0
+            end_of_file = False
+            while not end_of_file:
+                try:
+                    resp = self.connection.listen_single_segment()
+                    segment_seq_number = resp.get_header()["sequence"]
+                    if segment_seq_number == request_number :
+                        print(f"[!] Sequence number match with Rn, sending ACK number {request_number}...")
+                        dest.write(resp.get_payload())
+                        if request_number >= 0:
+                            ack = Segment()
+                            ack.set_flag([segment.ACK_FLAG])
+                            ack.set_header({"sequence":0,"ack": request_number})
+                            self.connection.send_data(ack)
+                        request_number += 1
+                    elif resp.get_flag().__FLAG == segment.FIN_FLAG:
+                        end_of_file = True
+                        print(f"[!] FIN flag, stoping transfer...")
+                        print(f"[!] Sending ACK tearing down connection...")
+                        ack_resp = Segment()
+                        ack_resp.set_flag([segment.ACK_FLAG])
+                        self.connection.send_data(ack_resp)
+                    else:
+                        print(f"[!] Sequence number mismatch, ignoring...")
+                
+                except socket.timeout:
+                    print(f"[!] Listening timeout, resending ACK {request_number-1}...")
+                    request_number = request_number - 1
+                    if request_number >= 0:
+                        ack = Segment()
+                        ack.set_flag([segment.ACK_FLAG])
+                        ack.set_header({"sequence":0,"ack": request_number})
+                        self.connection.send_data(ack)
 
 
 if __name__ == '__main__':

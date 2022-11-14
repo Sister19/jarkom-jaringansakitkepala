@@ -81,6 +81,8 @@ class Client:
                             ack.set_flag([segment.ACK_FLAG])
                             ack.set_header({"sequence":0,"ack": request_number})
                             self.connection.send_data(ack)
+                        else:
+                            pass
                         request_number += 1
                     elif resp.get_flag().__FLAG == segment.FIN_FLAG:
                         end_of_file = True
@@ -100,6 +102,8 @@ class Client:
                         ack.set_flag([segment.ACK_FLAG])
                         ack.set_header({"sequence":0,"ack": request_number})
                         self.connection.send_data(ack)
+                    else:
+                        pass
 
 
 if __name__ == '__main__':

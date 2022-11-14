@@ -28,7 +28,7 @@ class Segment:
         # pass
         self.__SEQ_NUM: int = 0
         self.__ACK_NUM: int = 0
-        self.__PAYLOAD: bytes = 0b0
+        self.__PAYLOAD: bytes = b""
         self.__FLAG: bytes = 0b0
 
     def __str__(self):

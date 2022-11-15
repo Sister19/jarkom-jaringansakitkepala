@@ -15,12 +15,12 @@ class Connection:
         # Send single segment into destination
         self.sock.sendto(msg.get_bytes(), dest)
 
-    def listen_single_segment(self) -> Segment:
+    def listen_single_segment(self) -> Tuple[Segment, Tuple[str, int]]:
         # Listen single UDP datagram within timeout and convert into segment
         data, addr = self.sock.recvfrom(LISTEN_BUFFER_SIZE)
         msg = Segment()
         msg.set_from_bytes(data)
-        return msg
+        return msg, addr
 
     def set_timeout(self, timeout: float):
         self.sock.settimeout(timeout)

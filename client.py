@@ -43,7 +43,7 @@ class Client:
         print("[!] Waiting for server response...")
         self.connection.set_timeout(self.listen_shake_timeout)
         try:
-            res_sync = self.connection.listen_single_segment()
+            res_sync, addr = self.connection.listen_single_segment()
             res_flag = res_sync.get_flag()
             if res_flag.__FLAG:
                 # Send ACK
@@ -71,7 +71,7 @@ class Client:
             end_of_file = False
             while not end_of_file:
                 try:
-                    resp = self.connection.listen_single_segment()
+                    resp, addr = self.connection.listen_single_segment()
                     segment_seq_number = resp.get_header()["sequence"]
                     if segment_seq_number == request_number :
                         print(f"[!] Sequence number match with Rn, sending ACK number {request_number}...")
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     # test_connection
     # client = lib.connection.Connection("localhost",1234)
     # client.set_timeout(CLIENT_LISTEN_TIMEOUT)
-    # msg = client.listen_single_segment()
+    # msg, addr = client.listen_single_segment()
     # print(msg)
     # client.close_socket()
     main = Client()

@@ -41,7 +41,7 @@ class Server:
         self.connection.send_data(resp_synack, client_addr)
 
         # Listen for ACK
-        msg = self.connection.listen_single_segment()
+        msg, addr = self.connection.listen_single_segment()
         ack_flag = msg.get_flag()
         if ack_flag.__FLAG == segment.ACK_FLAG:
             print(f"[!] Connection established with client {client_addr[0]}:{client_addr[1]}")

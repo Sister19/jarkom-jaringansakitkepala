@@ -32,7 +32,21 @@ class Server:
 
     def listen_for_clients(self):
         # Waiting client for connect
-        pass
+        # pass
+        self.__client_connected = False
+        self.__client_addr = 0
+
+        while not self.__client_connected:
+            try:
+                data: Segment, addr: Tuple[str, int] = self.connection.listen_single_segment()
+                if (data.valid_checksum() and data.get_flag().SYN):
+                    self.client_conn_list.append(addr)
+                    print(f"[!] Client ({addr[0]}:{addr[1]}) found")
+                    self.__client_connected = True
+                    self.__client_addr = addr
+            except socket.timeout:
+                self.__client_connected = False
+                self.__client_addr = 0
 
     def start_file_transfer(self):
         # Handshake & file transfer for all client
@@ -131,3 +145,4 @@ if __name__ == '__main__':
     # main = Server()
     # main.listen_for_clients()
     # main.start_file_transfer()
+

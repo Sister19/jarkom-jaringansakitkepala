@@ -9,17 +9,24 @@ class SegmentFlag:
     """
     Class untuk byte flag pada segment
     """
-    def __init__(self, flag : bytes):
+    def __init__(self, flag: bytes):
         # Init flag variable from flag byte
 
         # Input merupakan gabungan ketiga flag
         # SYN, ACK, FIN
-        self.__FLAG = flag
+        # self.__FLAG = flag
+        self.SYN = flag >> 1 & 1
+        self.ACK = flag >> 4 & 1
+        self.FIN = flag >> 0 & 1
 
     def get_flag_bytes(self) -> bytes:
         # Convert this object to flag in byte form
         # Di-pack sebagai unsigned char
-        return struct.pack("!B", self.__FLAG)
+        return struct.pack("!B", self.get_flag())
+
+    def get_flag(self) -> bytes:
+        return (self.SYN << 1) + (self.ACK << 4) + (self.FIN << 0)
+
 
 class Segment:
     # -- Internal Function --
@@ -30,6 +37,7 @@ class Segment:
         self.__ACK_NUM: int = 0
         self.__PAYLOAD: bytes = b""
         self.__FLAG: bytes = 0b0
+        self.__CHECKSUM: int = 0
 
     def __str__(self):
         # Optional, override this method for easier print(segmentA)
@@ -39,13 +47,29 @@ class Segment:
         output += f"{'FLAG SYN':24} | {self.__FLAG >> 1 & 0b1}\n"
         output += f"{'FLAG ACK':24} | {self.__FLAG >> 4 & 0b1}\n"
         output += f"{'FLAG FIN':24} | {self.__FLAG >> 0 & 0b1}\n"
-        output += f"{'Checksum':24} | {self.__calculate_checksum()}\n"
+        output += f"{'Checksum':24} | {struct.pack('@H', self.__calculate_checksum())}\n"
         output += f"{'Payload':24} | {self.__PAYLOAD}"
         return output
 
     def __calculate_checksum(self) -> int:
-        # Calculate checksum here, return checksum result
-        return 0
+        checksum      = 0x0
+        PACK_FORMAT = f"@iiBx{len(self.__PAYLOAD)}s0H"
+        PACK_BYTES = struct.pack(
+                PACK_FORMAT,                
+                self.__SEQ_NUM,
+                self.__ACK_NUM,
+                self.__FLAG,
+                self.__PAYLOAD
+            )
+
+        # Sum all 16-bit chunks of data
+        for i in range(0, len(PACK_BYTES), 2):
+            part_bytes = PACK_BYTES[i:i+2]
+            [ chunk ]  = struct.unpack("H", part_bytes)
+            checksum   = (checksum + chunk) & 0xFFFF
+
+        checksum = 0xFFFF - checksum    # Unsigned 16-bit bitwise not
+        return checksum
 
 
     # -- Setter --
@@ -84,19 +108,21 @@ class Segment:
             self.__SEQ_NUM, 
             self.__ACK_NUM,
             self.__FLAG,
-            _,
+            self.__CHECKSUM,
             self.__PAYLOAD
-        ) = struct.unpack(f"!iiBxh{PAYLOAD_SIZE}s", src)
+        ) = struct.unpack(f"!iiBxH{PAYLOAD_SIZE}s", src)
 
     def get_bytes(self) -> bytes:
+        # Calculate checksum
+        self.__CHECKSUM = self.__calculate_checksum()
         # Convert this object to pure bytes
-        PACK_FORMAT = f"!iiBxh{len(self.__PAYLOAD)}s"
+        PACK_FORMAT = f"!iiBxH{len(self.__PAYLOAD)}s"
         PACK_BYTES = struct.pack(
                 PACK_FORMAT,                
                 self.__SEQ_NUM,
                 self.__ACK_NUM,
                 self.__FLAG,
-                self.__calculate_checksum(),
+                self.__CHECKSUM,
                 self.__PAYLOAD
             )
         return PACK_BYTES
@@ -104,7 +130,8 @@ class Segment:
     # -- Checksum --
     def valid_checksum(self) -> bool:
         # Use __calculate_checksum() and check integrity of this object
-        pass
+        print(f"{self.__calculate_checksum()} + {self.__CHECKSUM} = {self.__calculate_checksum() + self.__CHECKSUM}")
+        return self.__calculate_checksum() == self.__CHECKSUM
 
 if __name__ == "__main__":
     test_segment = Segment()
@@ -114,10 +141,11 @@ if __name__ == "__main__":
             }
     test_segment.set_header(test_header)
     test_segment.set_payload(b"Test Segment")
-    test_segment.set_flag([0b0, 0b1, 0b1])
+    test_segment.set_flag([0b0, 0b0, 0b1])
     print("Test Segment 1")
     print(test_segment)
     test_segment_2 = Segment()
     test_segment_2.set_from_bytes(test_segment.get_bytes())
     print("Test Segment 2")
     print(test_segment_2)
+    print(test_segment_2.valid_checksum())

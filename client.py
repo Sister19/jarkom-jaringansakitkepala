@@ -14,8 +14,6 @@ class Client:
             "port_client": (int, "Client port"),
             "port_server": (int, "Server port"),
             "path": (str, "Destination file path")
-            # "-s": (None, "Show information of segment"),
-            # "-p": (None, "Show payload of a segment in hexadecimal")
         }
         parser = lib.argparser.ArgumentParser("Client", args)
         args = parser.parse_args()
@@ -79,21 +77,16 @@ class Client:
                         print(f"[!] Sequence number match with Rn, sending ACK number {request_number}...")
                         dest.write(resp.get_payload())
                         if request_number >= 0:
-                            # ack = Segment()
-                            # ack.set_flag([segment.ACK_FLAG])
                             ack = Segment.get_seg("ACK")
                             ack.set_header({"sequence":0,"ack": request_number})
                             self.connection.send_data(ack, self.server_broadcast_addr)
                         else:
                             pass
                         request_number += 1
-                    # elif resp.get_flag().__FLAG == segment.FIN_FLAG:
                     elif resp.get_flag().FIN and isValidChecksum: # Kalau FIN true
                         end_of_file = True
                         print(f"[!] FIN flag, stoping transfer...")
                         print(f"[!] Sending FIN-ACK tearing down connection...")
-                        # ack_resp = Segment()
-                        # ack_resp.set_flag([segment.ACK_FLAG])
                         ack_resp = Segment.get_seg("FIN","ACK")
                         self.connection.send_data(ack_resp, self.server_broadcast_addr)
                     elif isValidChecksum:
@@ -112,12 +105,6 @@ class Client:
         self.connection.close_socket()
 
 if __name__ == '__main__':
-    # test_connection
-    # client = lib.connection.Connection("localhost",1234)
-    # client.set_timeout(CLIENT_LISTEN_TIMEOUT)
-    # msg, addr = client.listen_single_segment()
-    # print(msg)
-    # client.close_socket()
     main = Client()
     main.three_way_handshake()
     main.listen_file_transfer()

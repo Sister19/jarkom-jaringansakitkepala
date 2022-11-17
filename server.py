@@ -8,29 +8,12 @@ import socket
 
 SERVER_TRANSFER_ACK_TIMEOUT = 0.5
 
-# class Connected_Client:
-#     def __init__(self, id_, address):
-#         self.__client_id = id_
-#         self.__client_addr = address
-#
-#     def __eq__(self, other):
-#         if isinstance(other, Connected_Client):
-#             return other.__client_addr == self.__client_addr
-#         elif isinstance(other, tuple) and len(other) > 1:
-#             return other[1] == self.__client_addr
-#         else:
-#             return False
-#     def __str__(self):
-#         return f"client at {self.__client_id:15} from {self.__client_addr[0]}:{self.__client_addr[1]}"
-
 class Server:
     def __init__(self):
         # Init server
         args = {
             "port": (int, "Client port"),
             "path": (str, "Destination path")
-            # "-s": (None, "Show information of segment"),
-            # "-p": (None, "Show payload of a segment in hexadecimal")
         }
         parser = lib.argparser.ArgumentParser("Client", args)
         args = parser.parse_args()
@@ -45,7 +28,6 @@ class Server:
             self.file_size = src.tell()
         self.total_segment = math.ceil(self.file_size/32756)
         self.window_size = 10
-        # self.connection.set_listen_timeout(SERVER_TRANSFER_ACK_TIMEOUT)
         self.connection.set_timeout(SERVER_TRANSFER_ACK_TIMEOUT)
         self.__client_list = [] # Isinya addr
 
@@ -76,17 +58,7 @@ class Server:
                 print(f"[!] Socket timeout")
 
     def start_file_transfer(self):
-        # Handshake & file transfer for all client
-        # print("[!] Initiating three way handshake with client...")
-        # print(f"[!] Sending SYN-ACK to client at {self.__client_addr[0]}:{self.__client_addr[1]}")
-        #
-        # isSuccess = self.three_way_handshake(self.__client_addr)
-        # 
-        # if not isSuccess:
-        #     self.__client_connected = False
-        #
-        # print(f"[!] Starting file transfer to client at {self.__client_addr[0]}:{self.__client_addr[1]}")
-        # self.file_transfer(self.__client_addr)
+        # Start file transfer
         print("[!] Initiating three way handshake with client...")
         disconn_client = []
         for conn_client in self.__client_list:
@@ -145,8 +117,6 @@ class Server:
         
             print(f"[!] File transfer completed for client at {client_addr[0]}:{client_addr[1]}")
             print("[!] Closing connection, sending FIN to client")
-            # fin_segment = Segment()
-            # fin_segment.set_flag(segment.FIN_FLAG)
 
             fin_ack_received = False
             try:
@@ -159,8 +129,6 @@ class Server:
                         fin_ack_received = True
                         print(f"[!] FIN-ACK received from client at {client_addr[0]}:{client_addr[1]}")
                         print("[!] Closing connection, sending ACK to client")
-                        # ack_segment = Segment()
-                        # ack_segment.set_flag(segment.ACK_FLAG)
                         ack_segment = Segment.get_seg("ACK")
                         self.connection.send_data(ack_segment, client_addr)
             except socket.timeout:
@@ -170,9 +138,7 @@ class Server:
         
 
     def three_way_handshake(self, client_addr : Tuple[str, int]) -> bool:
-        # Three way handshake, server-side, 1 client
-        # resp_synack = Segment()
-        # resp_synack.set_flag([0b1, 0b0, 0b0])
+
         resp_synack = Segment.get_seg("SYN", "ACK")
         self.connection.send_data(resp_synack, client_addr)
 
@@ -192,18 +158,6 @@ class Server:
                 print(f"[!] Handshake failed with client at {client_addr[0]}:{client_addr[1]}")    
 
 if __name__ == '__main__':
-    # server = lib.connection.Connection("localhost",1337)
-    # test_segment = Segment()
-    # test_header = {
-    #         "sequence": 24,
-    #         "ack": 40
-    #         }
-    # test_segment.set_header(test_header)
-    # test_segment.set_payload(b"Test Segment")
-    # test_segment.set_flag([0b0, 0b1, 0b1])    
-    # server.set_timeout(SERVER_TRANSFER_ACK_TIMEOUT)
-    # server.send_data(test_segment,("localhost",1234))
-    # server.close_socket()
     main = Server()
     main.listen_for_clients()
     main.start_file_transfer()

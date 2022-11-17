@@ -14,7 +14,6 @@ class SegmentFlag:
 
         # Input merupakan gabungan ketiga flag
         # SYN, ACK, FIN
-        # self.__FLAG = flag
         self.SYN = (flag >> 1) & 1
         self.ACK = (flag >> 4) & 1
         self.FIN = (flag >> 0) & 1
@@ -145,20 +144,5 @@ class Segment:
         return self.__calculate_checksum() == self.__CHECKSUM
 
 if __name__ == "__main__":
-    # test_segment = Segment()
-    # test_header = {
-    #         "sequence": 24,
-    #         "ack": 40
-    #         }
-    # test_segment.set_header(test_header)
-    # test_segment.set_payload(b"Test Segment")
-    # test_segment.set_flag([0b0, 0b0, 0b1])
-    # print("Test Segment 1")
-    # print(test_segment)
-    # test_segment_2 = Segment()
-    # test_segment_2.set_from_bytes(test_segment.get_bytes())
-    # print("Test Segment 2")
-    # print(test_segment_2)
-    # print(test_segment_2.valid_checksum())
     seg_1 = Segment.get_seg("ACK", "SYN")
     print(seg_1)

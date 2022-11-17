@@ -6,7 +6,7 @@ from typing import Tuple
 import math
 import socket
 
-SERVER_TRANSFER_ACK_TIMEOUT = 5
+SERVER_TRANSFER_ACK_TIMEOUT = 0.5
 
 # class Connected_Client:
 #     def __init__(self, id_, address):

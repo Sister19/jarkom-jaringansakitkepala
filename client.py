@@ -4,7 +4,7 @@ import lib.segment as segment
 import socket
 import lib.argparser
 
-CLIENT_LISTEN_TIMEOUT = 4
+CLIENT_LISTEN_TIMEOUT = 0.4
 CLIENT_LISTEN_HANDSHAKE_TIMEOUT = 50
 
 class Client:

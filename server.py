@@ -147,20 +147,26 @@ class Server:
             print("[!] Closing connection, sending FIN to client")
             # fin_segment = Segment()
             # fin_segment.set_flag(segment.FIN_FLAG)
-            fin_segment = Segment.get_seg("FIN")
-            self.connection.send_data(fin_segment, client_addr)
 
+            fin_ack_received = False
             try:
-                finack_segment, addr, isValidChecksum = self.connection.listen_single_segment()
-                if (addr == client_addr and isValidChecksum and finack_segment.get_flag().ACK):
-                    print(f"[!] FIN-ACK received from client at {client_addr[0]}:{client_addr[1]}")
-                    print("[!] Closing connection, sending ACK to client")
-                    # ack_segment = Segment()
-                    # ack_segment.set_flag(segment.ACK_FLAG)
-                    ack_segment = Segment.get_seg("ACK")
-                    self.connection.send_data(ack_segment, client_addr)
+                # resend fin until response = fin-ack or no response
+                while not fin_ack_received:
+                    fin_segment = Segment.get_seg("FIN")
+                    self.connection.send_data(fin_segment, client_addr)
+                    finack_segment, addr, isValidChecksum = self.connection.listen_single_segment()
+                    if (addr == client_addr and isValidChecksum and finack_segment.get_flag().FIN and finack_segment.get_flag().ACK):
+                        fin_ack_received = True
+                        print(f"[!] FIN-ACK received from client at {client_addr[0]}:{client_addr[1]}")
+                        print("[!] Closing connection, sending ACK to client")
+                        # ack_segment = Segment()
+                        # ack_segment.set_flag(segment.ACK_FLAG)
+                        ack_segment = Segment.get_seg("ACK")
+                        self.connection.send_data(ack_segment, client_addr)
             except socket.timeout:
-                print(f"[!] FIN-ACK not received from client at {client_addr[0]}:{client_addr[1]}, force closing connection")
+                # no response and fin-ack not received
+                if not fin_ack_received:
+                    print(f"[!] FIN-ACK not received from client at {client_addr[0]}:{client_addr[1]}, force closing connection")
         
 
     def three_way_handshake(self, client_addr : Tuple[str, int]) -> bool:

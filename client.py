@@ -91,10 +91,10 @@ class Client:
                     elif resp.get_flag().FIN and isValidChecksum: # Kalau FIN true
                         end_of_file = True
                         print(f"[!] FIN flag, stoping transfer...")
-                        print(f"[!] Sending ACK tearing down connection...")
+                        print(f"[!] Sending FIN-ACK tearing down connection...")
                         # ack_resp = Segment()
                         # ack_resp.set_flag([segment.ACK_FLAG])
-                        ack_resp = Segment.get_seg("ACK")
+                        ack_resp = Segment.get_seg("FIN","ACK")
                         self.connection.send_data(ack_resp, self.server_broadcast_addr)
                     elif isValidChecksum:
                         print(f"[!] Sequence number mismatch, ignoring...")
@@ -110,7 +110,7 @@ class Client:
                         self.connection.send_data(ack, self.server_broadcast_addr)
                     else:
                         pass
-
+        self.connection.close_socket()
 
 if __name__ == '__main__':
     # test_connection

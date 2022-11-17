@@ -49,7 +49,7 @@ class Server:
                     self.__client_list.append(addr)
 
                 elif addr in self.__client_list:
-                    print(f"[!] Existing client at {addr[0]}:{addr:1} found, ignored")
+                    print(f"[!] Existing client at {addr[0]}:{addr[1]} found, ignored")
 
                 ask_new_client = input("[?] Listen more? (y/N) ")
                 new_client = ask_new_client.lower() == 'y'
@@ -75,7 +75,7 @@ class Server:
 
     def file_transfer(self, client_addr : Tuple[str, int]):
         seq_base = 0
-        N = 10
+        N = 5
         seq_max = min(seq_base + N, self.total_segment)
 
         with open(self.path, "rb") as src:

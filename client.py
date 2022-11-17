@@ -44,9 +44,9 @@ class Client:
         print("[!] Waiting for server response...")
         self.connection.set_timeout(self.listen_shake_timeout)
         try:
-            res_sync, addr = self.connection.listen_single_segment()
+            res_sync, addr, isValidChecksum = self.connection.listen_single_segment()
             res_flag = res_sync.get_flag()
-            if res_flag.SYN:
+            if res_flag.SYN and isValidChecksum:
                 # Send ACK
                 ack_req = Segment()
                 ack_req.set_flag([0b0, 0b1, 0b0])
@@ -72,9 +72,9 @@ class Client:
             end_of_file = False
             while not end_of_file:
                 try:
-                    resp, addr = self.connection.listen_single_segment()
+                    resp, addr, isValidChecksum = self.connection.listen_single_segment()
                     segment_seq_number = resp.get_header()["sequence"]
-                    if segment_seq_number == request_number :
+                    if segment_seq_number == request_number and isValidChecksum:
                         print(f"[!] Sequence number match with Rn, sending ACK number {request_number}...")
                         dest.write(resp.get_payload())
                         if request_number >= 0:
@@ -87,7 +87,7 @@ class Client:
                             pass
                         request_number += 1
                     # elif resp.get_flag().__FLAG == segment.FIN_FLAG:
-                    elif resp.get_flag().FIN: # Kalau FIN true
+                    elif resp.get_flag().FIN and isValidChecksum: # Kalau FIN true
                         end_of_file = True
                         print(f"[!] FIN flag, stoping transfer...")
                         print(f"[!] Sending ACK tearing down connection...")
@@ -95,8 +95,10 @@ class Client:
                         # ack_resp.set_flag([segment.ACK_FLAG])
                         ack_resp = Segment.get_seg("ACK")
                         self.connection.send_data(ack_resp, self.server_broadcast_addr)
-                    else:
+                    elif isValidChecksum:
                         print(f"[!] Sequence number mismatch, ignoring...")
+                    else:
+                        print("[!] Invalid checksum, dropping...")
                 
                 except socket.timeout:
                     print(f"[!] Listening timeout, resending ACK {request_number-1}...")

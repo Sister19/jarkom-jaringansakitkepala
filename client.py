@@ -105,8 +105,7 @@ class Client:
                     print(f"[!] Listening timeout, resending ACK {request_number-1}...")
                     request_number = request_number - 1
                     if request_number >= 0:
-                        ack = Segment()
-                        ack.set_flag([segment.ACK_FLAG])
+                        ack = Segment.get_seg("ACK")
                         ack.set_header({"sequence":0,"ack": request_number})
                         self.connection.send_data(ack, self.server_broadcast_addr)
                     else:

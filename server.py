@@ -93,10 +93,10 @@ class Server:
             print(f"[!] Sending SYN-ACK to client at {conn_client[0]}:{conn_client[1]}")
             is_success = self.three_way_handshake(conn_client)
             if not is_success:
+                print(f"[!] Three way handshake with client at {conn_client[0]}:{conn_client[1]} failed, removing client")
                 disconn_client.append(conn_client)
         for conn_client in disconn_client:
-            print(f"[!] Three way handshake with client at {conn_client[0]}:{conn_client[1]} failed, removing client")
-            self.client_conn_list.remove(conn_client)
+            self.__client_list.remove(conn_client)
         for conn_client in self.__client_list:
             print(f"[!] Starting file transfer to client at {conn_client[0]}:{conn_client[1]}")
             self.file_transfer(conn_client)
@@ -171,15 +171,19 @@ class Server:
         self.connection.send_data(resp_synack, client_addr)
 
         # Listen for ACK
-        msg, addr, isValidChecksum = self.connection.listen_single_segment()
-        ack_flag = msg.get_flag()
-        if ack_flag.ACK == segment.ACK_FLAG and isValidChecksum:
-            print(f"[!] Connection established with client at {client_addr[0]}:{client_addr[1]}")
-            return True
-        else:
-            print(f"[!] Invalid response : client ACK response not valid")
-            print(f"[!] Handshake failed with client at {client_addr[0]}:{client_addr[1]}")
-            return False
+        try:
+            msg, addr, isValidChecksum = self.connection.listen_single_segment()
+            ack_flag = msg.get_flag()
+            if ack_flag.ACK == segment.ACK_FLAG and isValidChecksum:
+                print(f"[!] Connection established with client at {client_addr[0]}:{client_addr[1]}")
+                return True
+            else:
+                print(f"[!] Invalid response : client ACK response not valid")
+                print(f"[!] Handshake failed with client at {client_addr[0]}:{client_addr[1]}")
+                return False
+        except socket.timeout:
+                print("[!] Handshake Ack response timeout...")
+                print(f"[!] Handshake failed with client at {client_addr[0]}:{client_addr[1]}")    
 
 if __name__ == '__main__':
     # server = lib.connection.Connection("localhost",1337)

@@ -96,9 +96,8 @@ class Server:
                 # listen until all ack or timeout
                 while seq_base <= last_seq_sent:
                     try:
-                        ack_segment, addr = self.connection.listen_single_segment()
-                        # checksum_valid = ack_segment.checksum_valid()
-                        if (addr == client_addr and ack_segment.get_flag().ACK):
+                        ack_segment, addr, isValidChecksum = self.connection.listen_single_segment()
+                        if (addr == client_addr and isValidChecksum and ack_segment.get_flag().ACK):
                             ack_num = ack_segment.get_header()["ack"]
                             if(ack_num == seq_base):
                                 seq_base += 1
@@ -112,6 +111,8 @@ class Server:
                                 print(f"[!] ACK {ack_num} less than {seq_base} received from client {client_addr[0]}:{client_addr[1]}, Ignoring...")
                         elif addr!=client_addr:
                             print(f"[!] Ignoring segment: from different client...")
+                        elif not isValidChecksum:
+                            print(f"[!] Dropping segment: invalid checksum...")
                         else:
                             print(f"[!] Ignoring segment: not ACK")
                     except socket.timeout:
@@ -126,8 +127,8 @@ class Server:
             self.connection.send_data(fin_segment, client_addr)
 
             try:
-                finack_segment, addr = self.connection.listen_single_segment()
-                if (addr == client_addr and finack_segment.get_flag().ACK):
+                finack_segment, addr, isValidChecksum = self.connection.listen_single_segment()
+                if (addr == client_addr and isValidChecksum and finack_segment.get_flag().ACK):
                     print(f"[!] FIN-ACK received from client {client_addr[0]}:{client_addr[1]}")
                     print("[!] Closing connection, sending ACK to client")
                     # ack_segment = Segment()
@@ -146,9 +147,9 @@ class Server:
         self.connection.send_data(resp_synack, client_addr)
 
         # Listen for ACK
-        msg, addr = self.connection.listen_single_segment()
+        msg, addr, isValidChecksum = self.connection.listen_single_segment()
         ack_flag = msg.get_flag()
-        if ack_flag.ACK == segment.ACK_FLAG:
+        if ack_flag.ACK == segment.ACK_FLAG and isValidChecksum:
             print(f"[!] Connection established with client {client_addr[0]}:{client_addr[1]}")
             return True
         else:

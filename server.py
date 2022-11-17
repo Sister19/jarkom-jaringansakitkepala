@@ -6,7 +6,23 @@ from typing import Tuple
 import math
 import socket
 
-SERVER_TRANSFER_ACK_TIMEOUT = 1
+SERVER_TRANSFER_ACK_TIMEOUT = 5
+
+# class Connected_Client:
+#     def __init__(self, id_, address):
+#         self.__client_id = id_
+#         self.__client_addr = address
+#
+#     def __eq__(self, other):
+#         if isinstance(other, Connected_Client):
+#             return other.__client_addr == self.__client_addr
+#         elif isinstance(other, tuple) and len(other) > 1:
+#             return other[1] == self.__client_addr
+#         else:
+#             return False
+#     def __str__(self):
+#         return f"client at {self.__client_id:15} from {self.__client_addr[0]}:{self.__client_addr[1]}"
+
 class Server:
     def __init__(self):
         # Init server
@@ -31,53 +47,61 @@ class Server:
         self.window_size = 10
         # self.connection.set_listen_timeout(SERVER_TRANSFER_ACK_TIMEOUT)
         self.connection.set_timeout(SERVER_TRANSFER_ACK_TIMEOUT)
-        self.__client_connected = False
-        self.__client_addr = ("", 0)
-
+        self.__client_list = [] # Isinya addr
 
     def listen_for_clients(self):
         # Waiting client for connect
         # pass
-        while not self.__client_connected:
+        new_client = True
+        while new_client:
             try:
                 print(f"[!] Listening for clients...")
                 data, addr, isValidChecksum = self.connection.listen_single_segment()
-                if (isValidChecksum and data.get_flag().SYN):
-                    print(f"[!] Client ({addr[0]}:{addr[1]}) found")
-                    self.__client_connected = True
-                    self.__client_addr = addr
+                if (
+                    isValidChecksum 
+                    and data.get_flag().SYN 
+                    and addr not in self.__client_list
+                    ):
+
+                    print(f"[!] New client found at {addr[0]}:{addr[1]}")
+                    self.__client_list.append(addr)
+
+                elif addr in self.__client_list:
+                    print(f"[!] Existing client at {addr[0]}:{addr:1} found, ignored")
+
+                ask_new_client = input("[?] Listen more? (y/N) ")
+                new_client = ask_new_client.lower() == 'y'
+
             except socket.timeout:
                 print(f"[!] Socket timeout")
-                self.__client_connected = False
-                self.__client_addr = ("", 0)
 
     def start_file_transfer(self):
         # Handshake & file transfer for all client
-        print("[!] Initiating three way handshake with client...")
-        print(f"[!] Sending SYN-ACK to client {self.__client_addr[0]}:{self.__client_addr[1]}")
-
-        isSuccess = self.three_way_handshake(self.__client_addr)
-        
-        if not isSuccess:
-            self.__client_connected = False
-
-        print(f"[!] Starting file transfer to client {self.__client_addr[0]}:{self.__client_addr[1]}")
-        self.file_transfer(self.__client_addr)
         # print("[!] Initiating three way handshake with client...")
-        # failed_client = []
-        # for client_addr in [self.__client_addr]:
-        #     print(f"[!] Sending SYN-ACK to client {client_addr[0]}:{client_addr[1]}")
-        #     isSuccess = self.three_way_handshake(client_addr)
-        #     if not isSuccess:
-        #         failed_client.append(client_addr)
-        # for client_addr in failed_client:
-        #     self.client_conn_list.remove(client_addr)
-        # for client_addr in self.client_conn_list:
-        #     print(f"[!] Starting file transfer to client {client_addr[0]}:{client_addr[1]}")
-        #     self.__file_transfer(client_addr)
+        # print(f"[!] Sending SYN-ACK to client at {self.__client_addr[0]}:{self.__client_addr[1]}")
+        #
+        # isSuccess = self.three_way_handshake(self.__client_addr)
+        # 
+        # if not isSuccess:
+        #     self.__client_connected = False
+        #
+        # print(f"[!] Starting file transfer to client at {self.__client_addr[0]}:{self.__client_addr[1]}")
+        # self.file_transfer(self.__client_addr)
+        print("[!] Initiating three way handshake with client...")
+        disconn_client = []
+        for conn_client in self.__client_list:
+            print(f"[!] Sending SYN-ACK to client at {conn_client[0]}:{conn_client[1]}")
+            is_success = self.three_way_handshake(conn_client)
+            if not is_success:
+                disconn_client.append(conn_client)
+        for conn_client in disconn_client:
+            print(f"[!] Three way handshake with client at {conn_client[0]}:{conn_client[1]} failed, removing client")
+            self.client_conn_list.remove(conn_client)
+        for conn_client in self.__client_list:
+            print(f"[!] Starting file transfer to client at {conn_client[0]}:{conn_client[1]}")
+            self.file_transfer(conn_client)
 
     def file_transfer(self, client_addr : Tuple[str, int]):
-        # File transfer, server-side, Send file to 1 client
         seq_base = 0
         N = 10
         seq_max = min(seq_base + N, self.total_segment)
@@ -91,7 +115,7 @@ class Server:
                     data_segment.set_payload(src.read(32756))
                     data_segment.set_header({"sequence": seq_num, "ack": 0})
                     self.connection.send_data(data_segment, client_addr)
-                    print(f"[!] Sending segment {seq_num} to client {client_addr[0]}:{client_addr[1]}") 
+                    print(f"[!] Sending segment {seq_num} to client at {client_addr[0]}:{client_addr[1]}") 
                 last_seq_sent = seq_max-1
                 # listen until all ack or timeout
                 while seq_base <= last_seq_sent:
@@ -102,13 +126,13 @@ class Server:
                             if(ack_num == seq_base):
                                 seq_base += 1
                                 seq_max = min(seq_base + N, self.total_segment)
-                                print(f"[!] ACK {ack_num} received from client {client_addr[0]}:{client_addr[1]}, next sequence base = {seq_base}")
+                                print(f"[!] ACK {ack_num} received from client at {client_addr[0]}:{client_addr[1]}, next sequence base = {seq_base}")
                             elif ack_num > seq_base:
                                 seq_base = ack_num+1
                                 seq_max = min(seq_base + N, self.total_segment)
-                                print(f"[!] ACK {ack_num} received from client {client_addr[0]}:{client_addr[1]}, shifting sequence base to {seq_base}")
+                                print(f"[!] ACK {ack_num} received from client at {client_addr[0]}:{client_addr[1]}, shifting sequence base to {seq_base}")
                             else:
-                                print(f"[!] ACK {ack_num} less than {seq_base} received from client {client_addr[0]}:{client_addr[1]}, Ignoring...")
+                                print(f"[!] ACK {ack_num} less than {seq_base} received from client at {client_addr[0]}:{client_addr[1]}, Ignoring...")
                         elif addr!=client_addr:
                             print(f"[!] Ignoring segment: from different client...")
                         elif not isValidChecksum:
@@ -116,10 +140,10 @@ class Server:
                         else:
                             print(f"[!] Ignoring segment: not ACK")
                     except socket.timeout:
-                        print(f"[!] Segment {seq_base} not acknowledged by client {client_addr[0]}:{client_addr[1]}")
+                        print(f"[!] Segment {seq_base} not acknowledged by client at {client_addr[0]}:{client_addr[1]}")
                         break
         
-            print(f"[!] File transfer completed for client {client_addr[0]}:{client_addr[1]}")
+            print(f"[!] File transfer completed for client at {client_addr[0]}:{client_addr[1]}")
             print("[!] Closing connection, sending FIN to client")
             # fin_segment = Segment()
             # fin_segment.set_flag(segment.FIN_FLAG)
@@ -129,14 +153,14 @@ class Server:
             try:
                 finack_segment, addr, isValidChecksum = self.connection.listen_single_segment()
                 if (addr == client_addr and isValidChecksum and finack_segment.get_flag().ACK):
-                    print(f"[!] FIN-ACK received from client {client_addr[0]}:{client_addr[1]}")
+                    print(f"[!] FIN-ACK received from client at {client_addr[0]}:{client_addr[1]}")
                     print("[!] Closing connection, sending ACK to client")
                     # ack_segment = Segment()
                     # ack_segment.set_flag(segment.ACK_FLAG)
                     ack_segment = Segment.get_seg("ACK")
                     self.connection.send_data(ack_segment, client_addr)
             except socket.timeout:
-                print(f"[!] FIN-ACK not received from client {client_addr[0]}:{client_addr[1]}, force closing connection")
+                print(f"[!] FIN-ACK not received from client at {client_addr[0]}:{client_addr[1]}, force closing connection")
         
 
     def three_way_handshake(self, client_addr : Tuple[str, int]) -> bool:
@@ -150,11 +174,11 @@ class Server:
         msg, addr, isValidChecksum = self.connection.listen_single_segment()
         ack_flag = msg.get_flag()
         if ack_flag.ACK == segment.ACK_FLAG and isValidChecksum:
-            print(f"[!] Connection established with client {client_addr[0]}:{client_addr[1]}")
+            print(f"[!] Connection established with client at {client_addr[0]}:{client_addr[1]}")
             return True
         else:
             print(f"[!] Invalid response : client ACK response not valid")
-            print(f"[!] Handshake failed with client {client_addr[0]}:{client_addr[1]}")
+            print(f"[!] Handshake failed with client at {client_addr[0]}:{client_addr[1]}")
             return False
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@ import socket
 from .segment import Segment
 from typing import Tuple
 
-LISTEN_BUFFER_SIZE = 2**16
+LISTEN_BUFFER_SIZE = 2**15
 
 class Connection:
     def __init__(self, ip : str, port : int):

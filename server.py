@@ -26,7 +26,7 @@ class Server:
         with open(self.path, "rb") as src:
             src.seek(0,2)
             self.file_size = src.tell()
-        self.total_segment = math.ceil(self.filesize/32768)
+        self.total_segment = math.ceil(self.filesize/32756)
         self.window_size = 10
         self.connection.set_listen_timeout(SERVER_TRANSFER_ACK_TIMEOUT)
 
@@ -50,7 +50,18 @@ class Server:
 
     def start_file_transfer(self):
         # Handshake & file transfer for all client
-        pass
+        print("[!] Initiating three way handshake with client...")
+        failed_client = []
+        for client_addr in self.client_conn_list:
+            print(f"[!] Sending SYN-ACK to client {client_addr[0]}:{client_addr[1]}")
+            isSuccess = self.three_way_handshake(client_addr)
+            if not isSuccess:
+                failed_client.append(client_addr)
+        for client_addr in failed_client:
+            self.client_conn_list.remove(client_addr)
+        for client_addr in self.client_conn_list:
+            print(f"[!] Starting file transfer to client {client_addr[0]}:{client_addr[1]}")
+            self.__file_transfer(client_addr)
 
     def file_transfer(self, client_addr : Tuple[str, int]):
         # File transfer, server-side, Send file to 1 client
@@ -63,8 +74,8 @@ class Server:
                 # send next segment or resend from min segment that haven't been acked
                 for seq_num in range(seq_base, seq_max):
                     data_segment = Segment()
-                    src.seek(32768*seq_num)
-                    data_segment.set_payload(src.read(32768))
+                    src.seek(32756*seq_num)
+                    data_segment.set_payload(src.read(32756))
                     data_segment.set_header({"sequence": seq_num, "ack": 0})
                     self.conn.send_data(data_segment, client_addr)
                     print(f"[!] Sending segment {seq_num} to client {client_addr[0]}:{client_addr[1]}") 
@@ -130,19 +141,19 @@ class Server:
             return False
 
 if __name__ == '__main__':
-    server = lib.connection.Connection("localhost",1337)
-    test_segment = Segment()
-    test_header = {
-            "sequence": 24,
-            "ack": 40
-            }
-    test_segment.set_header(test_header)
-    test_segment.set_payload(b"Test Segment")
-    test_segment.set_flag([0b0, 0b1, 0b1])    
-    server.set_timeout(SERVER_TRANSFER_ACK_TIMEOUT)
-    server.send_data(test_segment,("localhost",1234))
-    server.close_socket()
-    # main = Server()
-    # main.listen_for_clients()
-    # main.start_file_transfer()
+    # server = lib.connection.Connection("localhost",1337)
+    # test_segment = Segment()
+    # test_header = {
+    #         "sequence": 24,
+    #         "ack": 40
+    #         }
+    # test_segment.set_header(test_header)
+    # test_segment.set_payload(b"Test Segment")
+    # test_segment.set_flag([0b0, 0b1, 0b1])    
+    # server.set_timeout(SERVER_TRANSFER_ACK_TIMEOUT)
+    # server.send_data(test_segment,("localhost",1234))
+    # server.close_socket()
+    main = Server()
+    main.listen_for_clients()
+    main.start_file_transfer()
 

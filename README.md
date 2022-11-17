@@ -11,7 +11,7 @@ Server dapat dijalankan dengan perintah berikut:
 python server.py [port] [path]
 ```
 
-Field `[port]` diisi dengan port yang akan didengarkan oleh server.
+Field `[port]` diisi dengan port yang digunakan oleh server.
 
 Field `[path]` diisi dengan path ke file.
 
@@ -20,9 +20,11 @@ Field `[path]` diisi dengan path ke file.
 Client dapat dijalankan dengan perintah berikut:
 
 ```
-python client.py [port] [path]
+python client.py [port_client] [port_server] [path]
 ```
 
-Field `[port]` diisi dengan port yang akan didengarkan oleh client.
+Field `[port-client]` diisi dengan port yang digunakan oleh client.
 
-Field `[path]` diisi dengan path ke folder.
+Field `[port-server]` diisi dengan port yang digunakan oleh server.
+
+Field `[path]` diisi dengan path ke file baru.

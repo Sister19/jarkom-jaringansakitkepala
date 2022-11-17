@@ -11,8 +11,9 @@ class Client:
     def __init__(self):
         # Init client
         args = {
-            "port": (int, "Client port"),
-            "path": (str, "Destination path")
+            "port_client": (int, "Client port"),
+            "port_server": (int, "Server port"),
+            "path": (str, "Destination file path")
             # "-s": (None, "Show information of segment"),
             # "-p": (None, "Show payload of a segment in hexadecimal")
         }
@@ -20,10 +21,10 @@ class Client:
         args = parser.parse_args()
         
         self.ip = "localhost"
-        self.port = args.port
+        self.port = args.port_client
         self.path = args.path
         self.connection = lib.connection.Connection(self.ip, self.port)
-        self.server_broadcast_addr = ("localhost", 5000)
+        self.server_broadcast_addr = ("localhost", args.port_server)
         self.listen_timeout = CLIENT_LISTEN_TIMEOUT
         self.listen_shake_timeout = CLIENT_LISTEN_HANDSHAKE_TIMEOUT
         

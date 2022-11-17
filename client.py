@@ -46,7 +46,7 @@ class Client:
         try:
             res_sync, addr, isValidChecksum = self.connection.listen_single_segment()
             res_flag = res_sync.get_flag()
-            if res_flag.SYN and isValidChecksum:
+            if res_flag.SYN and res_flag.ACK and isValidChecksum:
                 # Send ACK
                 ack_req = Segment()
                 ack_req.set_flag([0b0, 0b1, 0b0])

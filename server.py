@@ -143,7 +143,7 @@ class Server:
         # Three way handshake, server-side, 1 client
         # resp_synack = Segment()
         # resp_synack.set_flag([0b1, 0b0, 0b0])
-        resp_synack = Segment.get_seg("SYN")
+        resp_synack = Segment.get_seg("SYN", "ACK")
         self.connection.send_data(resp_synack, client_addr)
 
         # Listen for ACK

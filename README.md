@@ -13,4 +13,16 @@ python server.py [port] [path]
 
 Field `[port]` diisi dengan port yang akan didengarkan oleh server.
 
-Field `[path]` diisi dengan.
+Field `[path]` diisi dengan path ke file.
+
+### Client
+
+Client dapat dijalankan dengan perintah berikut:
+
+```
+python client.py [port] [path]
+```
+
+Field `[port]` diisi dengan port yang akan didengarkan oleh client.
+
+Field `[path]` diisi dengan path ke folder.

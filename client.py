@@ -23,7 +23,7 @@ class Client:
         self.port = args.port
         self.path = args.path
         self.connection = lib.connection.Connection(self.ip, self.port)
-        self.server_broadcast_addr = ("",5000)
+        self.server_broadcast_addr = ("localhost", 5000)
         self.listen_timeout = CLIENT_LISTEN_TIMEOUT
         self.listen_shake_timeout = CLIENT_LISTEN_HANDSHAKE_TIMEOUT
         
@@ -36,7 +36,7 @@ class Client:
         print("[!] Initiate connection with three way handshake")
         print(f"[!] Sending broadcast SYN to port {self.server_broadcast_addr[1]}")
         req_sync = Segment()
-        req_sync.set_flag([segment.SYN_FLAG])
+        req_sync.set_flag([0b1, 0b0, 0b0])
         self.connection.send_data(req_sync, self.server_broadcast_addr)
         
         # Listen for SYN-ACK
@@ -45,11 +45,11 @@ class Client:
         try:
             res_sync, addr = self.connection.listen_single_segment()
             res_flag = res_sync.get_flag()
-            if res_flag.__FLAG:
+            if res_flag.SYN:
                 # Send ACK
                 ack_req = Segment()
-                ack_req.set_flag([segment.ACK_FLAG])
-                self.connection.send_data(ack_req)
+                ack_req.set_flag([0b0, 0b1, 0b0])
+                self.connection.send_data(ack_req, self.server_broadcast_addr)
                 print("[!] Connection established with server")
             else:
                 print("\n[!] Invalid response : server SYN-ACK response not valid")
@@ -77,20 +77,23 @@ class Client:
                         print(f"[!] Sequence number match with Rn, sending ACK number {request_number}...")
                         dest.write(resp.get_payload())
                         if request_number >= 0:
-                            ack = Segment()
-                            ack.set_flag([segment.ACK_FLAG])
+                            # ack = Segment()
+                            # ack.set_flag([segment.ACK_FLAG])
+                            ack = Segment.get_seg("ACK")
                             ack.set_header({"sequence":0,"ack": request_number})
-                            self.connection.send_data(ack)
+                            self.connection.send_data(ack, self.server_broadcast_addr)
                         else:
                             pass
                         request_number += 1
-                    elif resp.get_flag().__FLAG == segment.FIN_FLAG:
+                    # elif resp.get_flag().__FLAG == segment.FIN_FLAG:
+                    elif resp.get_flag().FIN: # Kalau FIN true
                         end_of_file = True
                         print(f"[!] FIN flag, stoping transfer...")
                         print(f"[!] Sending ACK tearing down connection...")
-                        ack_resp = Segment()
-                        ack_resp.set_flag([segment.ACK_FLAG])
-                        self.connection.send_data(ack_resp)
+                        # ack_resp = Segment()
+                        # ack_resp.set_flag([segment.ACK_FLAG])
+                        ack_resp = Segment.get_seg("ACK")
+                        self.connection.send_data(ack_resp, self.server_broadcast_addr)
                     else:
                         print(f"[!] Sequence number mismatch, ignoring...")
                 
@@ -101,7 +104,7 @@ class Client:
                         ack = Segment()
                         ack.set_flag([segment.ACK_FLAG])
                         ack.set_header({"sequence":0,"ack": request_number})
-                        self.connection.send_data(ack)
+                        self.connection.send_data(ack, self.server_broadcast_addr)
                     else:
                         pass
 

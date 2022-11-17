@@ -1,9 +1,9 @@
 import struct
 
 # Constants 
-SYN_FLAG = 0b0
-ACK_FLAG = 0b0
-FIN_FLAG = 0b0
+SYN_FLAG = 0b1
+ACK_FLAG = 0b1
+FIN_FLAG = 0b1
 
 class SegmentFlag:
     """
@@ -15,9 +15,9 @@ class SegmentFlag:
         # Input merupakan gabungan ketiga flag
         # SYN, ACK, FIN
         # self.__FLAG = flag
-        self.SYN = flag >> 1 & 1
-        self.ACK = flag >> 4 & 1
-        self.FIN = flag >> 0 & 1
+        self.SYN = (flag >> 1) & 1
+        self.ACK = (flag >> 4) & 1
+        self.FIN = (flag >> 0) & 1
 
     def get_flag_bytes(self) -> bytes:
         # Convert this object to flag in byte form
@@ -127,25 +127,38 @@ class Segment:
             )
         return PACK_BYTES
 
+    def get_seg(*flags) -> 'Segment':
+        res_seg = Segment()
+
+        f_syn = 0b1 if "SYN" in flags else 0b0
+        f_ack = 0b1 if "ACK" in flags else 0b0
+        f_fin = 0b1 if "FIN" in flags else 0b0
+
+        res_seg.set_flag([f_syn, f_ack, f_fin])
+
+        return res_seg
+
     # -- Checksum --
     def valid_checksum(self) -> bool:
         # Use __calculate_checksum() and check integrity of this object
-        print(f"{self.__calculate_checksum()} + {self.__CHECKSUM} = {self.__calculate_checksum() + self.__CHECKSUM}")
+        # print(f"{self.__calculate_checksum()} + {self.__CHECKSUM} = {self.__calculate_checksum() + self.__CHECKSUM}")
         return self.__calculate_checksum() == self.__CHECKSUM
 
 if __name__ == "__main__":
-    test_segment = Segment()
-    test_header = {
-            "sequence": 24,
-            "ack": 40
-            }
-    test_segment.set_header(test_header)
-    test_segment.set_payload(b"Test Segment")
-    test_segment.set_flag([0b0, 0b0, 0b1])
-    print("Test Segment 1")
-    print(test_segment)
-    test_segment_2 = Segment()
-    test_segment_2.set_from_bytes(test_segment.get_bytes())
-    print("Test Segment 2")
-    print(test_segment_2)
-    print(test_segment_2.valid_checksum())
+    # test_segment = Segment()
+    # test_header = {
+    #         "sequence": 24,
+    #         "ack": 40
+    #         }
+    # test_segment.set_header(test_header)
+    # test_segment.set_payload(b"Test Segment")
+    # test_segment.set_flag([0b0, 0b0, 0b1])
+    # print("Test Segment 1")
+    # print(test_segment)
+    # test_segment_2 = Segment()
+    # test_segment_2.set_from_bytes(test_segment.get_bytes())
+    # print("Test Segment 2")
+    # print(test_segment_2)
+    # print(test_segment_2.valid_checksum())
+    seg_1 = Segment.get_seg("ACK", "SYN")
+    print(seg_1)

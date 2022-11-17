@@ -41,8 +41,8 @@ class Server:
         while not self.__client_connected:
             try:
                 print(f"[!] Listening for clients...")
-                data, addr = self.connection.listen_single_segment()
-                if (data.valid_checksum() and data.get_flag().SYN):
+                data, addr, isValidChecksum = self.connection.listen_single_segment()
+                if (isValidChecksum and data.get_flag().SYN):
                     print(f"[!] Client ({addr[0]}:{addr[1]}) found")
                     self.__client_connected = True
                     self.__client_addr = addr

@@ -5,7 +5,7 @@ import socket
 import lib.argparser
 
 CLIENT_LISTEN_TIMEOUT = 4
-CLIENT_LISTEN_HANDSHAKE_TIMEOUT = 10
+CLIENT_LISTEN_HANDSHAKE_TIMEOUT = 50
 
 class Client:
     def __init__(self):
@@ -57,6 +57,7 @@ class Client:
                 print(f"[!] Exiting...")
                 exit(1)
         except socket.timeout:
+            print(f"[!] Socket timeout")
             print("\n[!] SYN-ACK Connection failed")
             print(f"[!] Exiting...")
             exit(1)
